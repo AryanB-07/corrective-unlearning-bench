@@ -159,7 +159,7 @@ class ApplyK(Naive):
             self.prenet.cuda().eval()
 
     def divide_model(self, model, k, model_name):
-        if k == -1:
+        if int(k) == -1:
             net = model
             prenet = None
             return prenet, net
