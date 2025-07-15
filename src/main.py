@@ -104,5 +104,5 @@ if __name__ == '__main__':
     elif opt.unlearn_method in ['Scrub', 'SSD']:
         method.unlearn(train_loader=retain_loader, test_loader=test_loader, forget_loader=forget_loader, eval_loaders=eval_loaders)
     
-    method.compute_and_save_results(train_test_loader, test_loader, adversarial_train_loader, adversarial_test_loader)
+    method.compute_and_save_results()
     print('==> Experiment completed! Exiting..')
