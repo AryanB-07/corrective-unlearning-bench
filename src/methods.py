@@ -21,23 +21,6 @@ class Naive():
         self.top1 = torchmetrics.Accuracy(task="multiclass", num_classes=self.opt.num_classes).cuda()
         self.scaler = GradScaler()
 
-
-    def compute_and_save_results(self, *args, **kwargs):
-        # Same logic you use for ApplyK or CF
-        self.get_save_prefix()
-        if not exists(self.unlearn_file_prefix):
-            makedirs(self.unlearn_file_prefix)
-    
-        torch.save(self.best_model.state_dict(), self.unlearn_file_prefix + '/model.pth')
-        np.save(self.unlearn_file_prefix + '/train_top1.npy', self.save_files['train_top1'])
-        np.save(self.unlearn_file_prefix + '/val_top1.npy', self.save_files['val_top1'])
-        np.save(self.unlearn_file_prefix + '/unlearn_time.npy', self.save_files['train_time_taken'])
-    
-        print('====== FINAL RESULTS SAVED ======')
-        print(f"Before Unlearning (Test Acc): {self.save_files['train_top1'][0]:.2f}%")
-        print(f"After  Unlearning (Test Acc): {self.save_files['val_top1'][-1]:.2f}%")
-        print('Unlearning Time: {:.3f} sec'.format(self.save_files['train_time_taken']))
-        print('=================================')
     
     def set_model(self, model, prenet=None):
         self.prenet = None
