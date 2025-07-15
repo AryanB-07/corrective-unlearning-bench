@@ -115,26 +115,23 @@ class Naive():
         return
 
 
-    def compute_and_save_results(self, train_test_loader, test_loader, adversarial_train_loader, adversarial_test_loader):
+    def compute_and_save_results(self):
         self.get_save_prefix()
-        print(self.unlearn_file_prefix)
+        print(f"[compute_and_save_results] Saving results to: {self.unlearn_file_prefix}")
+    
         if not exists(self.unlearn_file_prefix):
             makedirs(self.unlearn_file_prefix)
-
-        torch.save(self.best_model.state_dict(), self.unlearn_file_prefix+'/model.pth')
-        np.save(self.unlearn_file_prefix+'/train_top1.npy', self.save_files['train_top1'])
-        np.save(self.unlearn_file_prefix+'/val_top1.npy', self.save_files['val_top1'])
-        np.save(self.unlearn_file_prefix+'/unlearn_time.npy', self.save_files['train_time_taken'])
-        self.model = self.best_model.cuda()
-
-        print('==> Completed! Unlearning Time: [{0:.3f}]\t'.format(self.save_files['train_time_taken']))
-        
-        for loader, name in [(train_test_loader, 'train'), (test_loader, 'test'), (adversarial_train_loader, 'adv_train'), (adversarial_test_loader, 'adv_test')]:
-            if loader is not None:
-                preds, targets = self.eval(loader=loader, save_preds=True)
-                np.save(self.unlearn_file_prefix+'/preds_'+name+'.npy', preds)
-                np.save(self.unlearn_file_prefix+'/targets'+name+'.npy', targets)
-        return
+    
+        torch.save(self.best_model.state_dict(), self.unlearn_file_prefix + '/model.pth')
+        np.save(self.unlearn_file_prefix + '/train_top1.npy', self.save_files['train_top1'])
+        np.save(self.unlearn_file_prefix + '/val_top1.npy', self.save_files['val_top1'])
+        np.save(self.unlearn_file_prefix + '/unlearn_time.npy', self.save_files['train_time_taken'])
+    
+        print('====== FINAL RESULTS SAVED ======')
+        print(f"Before Unlearning (Test Acc): {self.save_files['train_top1'][0]:.2f}%")
+        print(f"After  Unlearning (Test Acc): {self.save_files['val_top1'][-1]:.2f}%")
+        print('Unlearning Time: {:.3f} sec'.format(self.save_files['train_time_taken']))
+        print('=================================')
 
 
 class ApplyK(Naive):
