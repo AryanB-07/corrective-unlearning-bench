@@ -69,7 +69,7 @@ if __name__ == '__main__':
         opt.unlearn_method, opt.exp_name = 'Naive', 'pretrainmodel'
         method = getattr(methods, opt.unlearn_method)(opt=opt, model=model)
         method.unlearn(train_loader=pretrain_loader, test_loader=test_loader)
-        method.compute_and_save_results()
+        # method.compute_and_save_results()
         opt.exp_name, opt.unlearn_method = expname, unlearn_method  
     else:
         print('==> Loading the pretrained model!')
