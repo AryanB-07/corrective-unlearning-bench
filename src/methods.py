@@ -309,19 +309,26 @@ class SSD(ApplyK):
     def __init__(self, opt, model, prenet=None):
         super().__init__(opt, model, prenet)
 
-
     def unlearn(self, train_loader, test_loader, forget_loader, eval_loaders=None):
+        self.eval(test_loader)
+        if len(self.save_files['train_top1']) == 0:
+            self.save_files['train_top1'].append(self.save_files['val_top1'][-1])
+
         actual_iters = self.opt.train_iters
         self.opt.train_iters = len(train_loader) + len(forget_loader)
         time_start = time.process_time()
-        self.best_model = ssd_tuning(self.model, forget_loader, self.opt.SSDdampening, self.opt.SSDselectwt, train_loader, self.opt.device)
+        self.best_model = ssd_tuning(
+            self.model, forget_loader, self.opt.SSDdampening,
+            self.opt.SSDselectwt, train_loader, self.opt.device
+        )
         self.save_files['train_time_taken'] += time.process_time() - time_start
         self.opt.train_iters = actual_iters
-        return
 
+        self.eval(test_loader)
+        return
 
     def get_save_prefix(self):
         self.unlearn_file_prefix = self.opt.pretrain_file_prefix+'/'+str(self.opt.deletion_size)+'_'+self.opt.unlearn_method+'_'+self.opt.exp_name
         self.unlearn_file_prefix += '_'+str(self.opt.train_iters)+'_'+str(self.opt.k)
         self.unlearn_file_prefix += '_'+str(self.opt.SSDdampening)+'_'+str(self.opt.SSDselectwt)
-        return 
+        return
