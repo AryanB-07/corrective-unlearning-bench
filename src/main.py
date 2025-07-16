@@ -11,7 +11,10 @@ from datasets import load_dataset, DatasetWrapper, manip_dataset, get_deletion_s
 if __name__ == '__main__':
     torch.multiprocessing.set_sharing_strategy('file_system')
     seed_everything(seed=0)
-    assert(torch.cuda.is_available())
+    if torch.cuda.is_available():
+        opt.device = 'cuda'
+    else:
+        opt.device = 'cpu'
     opt = parse_args()
     print('==> Opts: ',opt)
 
