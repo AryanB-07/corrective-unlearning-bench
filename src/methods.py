@@ -128,8 +128,8 @@ class Naive():
         np.save(self.unlearn_file_prefix + '/unlearn_time.npy', self.save_files['train_time_taken'])
     
         print('====== FINAL RESULTS SAVED ======')
-        print(f"Before Unlearning (Test Acc): {self.save_files['train_top1'][0]:.2f}%")
-        print(f"After  Unlearning (Test Acc): {self.save_files['val_top1'][-1]:.2f}%")
+        print(f"Before Unlearning (Test Acc): {self.save_files['train_top1'][0]*100:.2f}%")
+        print(f"After  Unlearning (Test Acc): {self.save_files['val_top1'][-1]*100:.2f}%")
         print('Unlearning Time: {:.3f} sec'.format(self.save_files['train_time_taken']))
         print('=================================')
 
