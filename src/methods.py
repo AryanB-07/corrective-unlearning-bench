@@ -158,7 +158,7 @@ class ApplyK(Naive):
             assert(k in [1,2,4,5,7,8])
             mapping = {1:6, 2:5, 4:4, 5:3, 7:2, 8:1}
             dividing_part = mapping[k]
-            all_mods = [model.conv1, model.conv2, model.res1, model.conv3, model.res2, model.conv4, model.fc] 
+            all_mods = [model.conv1, model.conv2, model.res1, model.conv3, model.res2, model.conv4, model.flatten, model.fc]
             prenet = torch.nn.Sequential(*all_mods[:dividing_part])
             net = torch.nn.Sequential(*all_mods[dividing_part:])
 
