@@ -340,9 +340,22 @@ def distill_kl_loss(y_s, y_t, T, reduction='sum'):
 
 def compute_accuracy(preds, y):
     preds = np.array(preds)
+
+    # Flatten if scalar or 0D tensor
+    if preds.ndim == 0:
+        preds = np.expand_dims(preds, axis=0)
+
+    # If still 1D, assume binary probs like [0.2, 0.8, ...]
     if preds.ndim == 1:
         preds = np.stack([1 - preds, preds], axis=1)
-    return np.equal(np.argmax(preds, axis=1), y).mean()
+
+    try:
+        pred_labels = np.argmax(preds, axis=1)
+    except Exception as e:
+        print("Shape of preds:", preds.shape)
+        raise e
+
+    return np.equal(pred_labels, y).mean()
 
 
 class SubsetSequentialSampler(Sampler):
