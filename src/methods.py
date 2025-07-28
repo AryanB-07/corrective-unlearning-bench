@@ -19,7 +19,7 @@ class Naive():
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.opt.max_lr, momentum=0.9, weight_decay=self.opt.wd)
         self.scheduler = LinearLR(self.optimizer, T=self.opt.train_iters*1.25, warmup_epochs=self.opt.train_iters//100) # Spend 1% time in warmup, and stop 66% of the way through training 
         self.top1 = torchmetrics.Accuracy(task="multiclass", num_classes=self.opt.num_classes).cuda()
-        self.scaler = GradScalar()
+        self.scaler = GradScaler()
 
 
     def set_model(self, model, prenet=None):
@@ -312,8 +312,8 @@ class SSD(ApplyK):
     def __init__(self, opt, model, prenet=None):
         super().__init__(opt, model, prenet)
 
+
     def unlearn(self, train_loader, test_loader, forget_loader, eval_loaders=None):
-        print(f"[{self.opt.unlearn_method}] Starting unlearning with train: {len(train_loader)}, forget: {len(forget_loader)}")
         actual_iters = self.opt.train_iters
         self.opt.train_iters = len(train_loader) + len(forget_loader)
         time_start = time.process_time()
@@ -326,10 +326,12 @@ class SSD(ApplyK):
         self.save_files['val_top1'].append(compute_accuracy(self.model, test_loader) if test_loader else -1)
 
         print(f"[{self.opt.unlearn_method}] Finished unlearning (SSD).")
+        
         return
+
 
     def get_save_prefix(self):
         self.unlearn_file_prefix = self.opt.pretrain_file_prefix+'/'+str(self.opt.deletion_size)+'_'+self.opt.unlearn_method+'_'+self.opt.exp_name
         self.unlearn_file_prefix += '_'+str(self.opt.train_iters)+'_'+str(self.opt.k)
         self.unlearn_file_prefix += '_'+str(self.opt.SSDdampening)+'_'+str(self.opt.SSDselectwt)
-        return
+        return 
