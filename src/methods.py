@@ -19,7 +19,7 @@ class Naive():
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.opt.max_lr, momentum=0.9, weight_decay=self.opt.wd)
         self.scheduler = LinearLR(self.optimizer, T=self.opt.train_iters*1.25, warmup_epochs=self.opt.train_iters//100) # Spend 1% time in warmup, and stop 66% of the way through training 
         self.top1 = torchmetrics.Accuracy(task="multiclass", num_classes=self.opt.num_classes).cuda()
-        self.scaler = torch.amp.GradScaler(device_type='cuda')
+        self.scaler = GradScalar()
 
 
     def set_model(self, model, prenet=None):
