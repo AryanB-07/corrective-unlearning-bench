@@ -321,9 +321,33 @@ class SSD(ApplyK):
         self.save_files['train_time_taken'] += time.process_time() - time_start
         self.opt.train_iters = actual_iters
 
-        # ✅ Avoid index error downstream by logging something
-        self.save_files['train_top1'].append(compute_accuracy(self.model, train_loader) if train_loader else -1)
-        self.save_files['val_top1'].append(compute_accuracy(self.model, test_loader) if test_loader else -1)
+        if train_loader:
+            self.model.eval()
+            correct, total = 0, 0
+            with torch.no_grad():
+                for x, y in train_loader:
+                    x, y = x.to(self.opt.device), y.to(self.opt.device)
+                    preds = self.model(x)
+                    predicted = preds.argmax(dim=1)
+                    correct += (predicted == y).sum().item()
+                    total += y.size(0)
+            self.save_files['train_top1'].append(correct / total)
+        else:
+            self.save_files['train_top1'].append(-1)
+        
+        if test_loader:
+            self.model.eval()
+            correct, total = 0, 0
+            with torch.no_grad():
+                for x, y in test_loader:
+                    x, y = x.to(self.opt.device), y.to(self.opt.device)
+                    preds = self.model(x)
+                    predicted = preds.argmax(dim=1)
+                    correct += (predicted == y).sum().item()
+                    total += y.size(0)
+            self.save_files['val_top1'].append(correct / total)
+        else:
+            self.save_files['val_top1'].append(-1)
 
         print(f"[{self.opt.unlearn_method}] Finished unlearning (SSD).")
         
