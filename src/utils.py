@@ -330,7 +330,10 @@ def distill_kl_loss(y_s, y_t, T, reduction='sum'):
     p_t = torch.nn.functional.softmax(y_t/T, dim=1)
     loss = torch.nn.functional.kl_div(p_s, p_t, reduction=reduction)
     if reduction == 'none':
-       loss = torch.sum(loss, dim=1)
+        if loss.ndim > 1:
+            loss = torch.sum(loss, dim=1)
+        else:
+            loss = torch.sum(loss)
     loss = loss * (T**2) / y_s.shape[0]
     return loss
 
