@@ -339,6 +339,9 @@ def distill_kl_loss(y_s, y_t, T, reduction='sum'):
 
 
 def compute_accuracy(preds, y):
+    preds = np.array(preds)
+    if preds.ndim == 1:
+        preds = np.stack([1 - preds, preds], axis=1)
     return np.equal(np.argmax(preds, axis=1), y).mean()
 
 
