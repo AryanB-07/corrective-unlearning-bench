@@ -21,7 +21,7 @@ class Naive():
         self.top1 = torchmetrics.Accuracy(task="multiclass", num_classes=self.opt.num_classes).cuda()
         self.scaler = GradScaler()
 
-    
+
     def set_model(self, model, prenet=None):
         self.prenet = None
         self.model = model
@@ -115,23 +115,26 @@ class Naive():
         return
 
 
-    def compute_and_save_results(self):
+    def compute_and_save_results(self, train_test_loader, test_loader, adversarial_train_loader, adversarial_test_loader):
         self.get_save_prefix()
-        print(f"[compute_and_save_results] Saving results to: {self.unlearn_file_prefix}")
-    
+        print(self.unlearn_file_prefix)
         if not exists(self.unlearn_file_prefix):
             makedirs(self.unlearn_file_prefix)
-    
-        torch.save(self.best_model.state_dict(), self.unlearn_file_prefix + '/model.pth')
-        np.save(self.unlearn_file_prefix + '/train_top1.npy', self.save_files['train_top1'])
-        np.save(self.unlearn_file_prefix + '/val_top1.npy', self.save_files['val_top1'])
-        np.save(self.unlearn_file_prefix + '/unlearn_time.npy', self.save_files['train_time_taken'])
-    
-        print('====== FINAL RESULTS SAVED ======')
-        print(f"Before Unlearning (Test Acc): {self.save_files['train_top1'][0]*100:.2f}%")
-        print(f"After  Unlearning (Test Acc): {self.save_files['val_top1'][-1]*100:.2f}%")
-        print('Unlearning Time: {:.3f} sec'.format(self.save_files['train_time_taken']))
-        print('=================================')
+
+        torch.save(self.best_model.state_dict(), self.unlearn_file_prefix+'/model.pth')
+        np.save(self.unlearn_file_prefix+'/train_top1.npy', self.save_files['train_top1'])
+        np.save(self.unlearn_file_prefix+'/val_top1.npy', self.save_files['val_top1'])
+        np.save(self.unlearn_file_prefix+'/unlearn_time.npy', self.save_files['train_time_taken'])
+        self.model = self.best_model.cuda()
+
+        print('==> Completed! Unlearning Time: [{0:.3f}]\t'.format(self.save_files['train_time_taken']))
+        
+        for loader, name in [(train_test_loader, 'train'), (test_loader, 'test'), (adversarial_train_loader, 'adv_train'), (adversarial_test_loader, 'adv_test')]:
+            if loader is not None:
+                preds, targets = self.eval(loader=loader, save_preds=True)
+                np.save(self.unlearn_file_prefix+'/preds_'+name+'.npy', preds)
+                np.save(self.unlearn_file_prefix+'/targets'+name+'.npy', targets)
+        return
 
 
 class ApplyK(Naive):
@@ -158,7 +161,7 @@ class ApplyK(Naive):
             assert(k in [1,2,4,5,7,8])
             mapping = {1:6, 2:5, 4:4, 5:3, 7:2, 8:1}
             dividing_part = mapping[k]
-            all_mods = [model.conv1, model.conv2, model.res1, model.conv3, model.res2, model.conv4, model.flatten, model.fc]
+            all_mods = [model.conv1, model.conv2, model.res1, model.conv3, model.res2, model.conv4, model.fc] 
             prenet = torch.nn.Sequential(*all_mods[:dividing_part])
             net = torch.nn.Sequential(*all_mods[dividing_part:])
 
@@ -309,26 +312,19 @@ class SSD(ApplyK):
     def __init__(self, opt, model, prenet=None):
         super().__init__(opt, model, prenet)
 
-    def unlearn(self, train_loader, test_loader, forget_loader, eval_loaders=None):
-        self.eval(test_loader)
-        if len(self.save_files['train_top1']) == 0:
-            self.save_files['train_top1'].append(self.save_files['val_top1'][-1])
 
+    def unlearn(self, train_loader, test_loader, forget_loader, eval_loaders=None):
         actual_iters = self.opt.train_iters
         self.opt.train_iters = len(train_loader) + len(forget_loader)
         time_start = time.process_time()
-        self.best_model = ssd_tuning(
-            self.model, forget_loader, self.opt.SSDdampening,
-            self.opt.SSDselectwt, train_loader, self.opt.device
-        )
+        self.best_model = ssd_tuning(self.model, forget_loader, self.opt.SSDdampening, self.opt.SSDselectwt, train_loader, self.opt.device)
         self.save_files['train_time_taken'] += time.process_time() - time_start
         self.opt.train_iters = actual_iters
-
-        self.eval(test_loader)
         return
+
 
     def get_save_prefix(self):
         self.unlearn_file_prefix = self.opt.pretrain_file_prefix+'/'+str(self.opt.deletion_size)+'_'+self.opt.unlearn_method+'_'+self.opt.exp_name
         self.unlearn_file_prefix += '_'+str(self.opt.train_iters)+'_'+str(self.opt.k)
         self.unlearn_file_prefix += '_'+str(self.opt.SSDdampening)+'_'+str(self.opt.SSDselectwt)
-        return
+        return 
