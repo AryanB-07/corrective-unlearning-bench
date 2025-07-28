@@ -325,7 +325,7 @@ class SSD(ApplyK):
             self.model.eval()
             correct, total = 0, 0
             with torch.no_grad():
-                for x, y in train_loader:
+                for x, y, _ in train_loader:
                     x, y = x.to(self.opt.device), y.to(self.opt.device)
                     preds = self.model(x)
                     predicted = preds.argmax(dim=1)
@@ -339,7 +339,7 @@ class SSD(ApplyK):
             self.model.eval()
             correct, total = 0, 0
             with torch.no_grad():
-                for x, y in test_loader:
+                for x, y, _ in test_loader:
                     x, y = x.to(self.opt.device), y.to(self.opt.device)
                     preds = self.model(x)
                     predicted = preds.argmax(dim=1)
