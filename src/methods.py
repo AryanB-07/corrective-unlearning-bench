@@ -1,4 +1,5 @@
 import torch, torchmetrics, tqdm, copy, time
+import torch.nn as nn
 from utils import LinearLR, unlearn_func, ssd_tuning, distill_kl_loss, compute_accuracy
 from torch.cuda.amp import autocast
 import numpy as np
