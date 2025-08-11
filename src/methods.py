@@ -308,63 +308,105 @@ class BadT(ApplyK):
         return 
 
 
+# class SSD(ApplyK):
+#     def __init__(self, opt, model, prenet=None):
+#         super().__init__(opt, model, prenet)
+
+
+#     def unlearn(self, train_loader, test_loader, forget_loader, eval_loaders=None):
+#         # actual_iters = self.opt.train_iters
+#         # self.opt.train_iters = len(train_loader) + len(forget_loader)
+#         time_start = time.process_time()
+#         self.best_model = ssd_tuning(self.model, forget_loader, self.opt.SSDdampening, self.opt.SSDselectwt, train_loader, self.opt.device)
+
+#         self.model.load_state_dict(self.best_model.state_dict())
+        
+#         self.save_files['train_time_taken'] += time.process_time() - time_start
+#         # self.opt.train_iters = actual_iters
+
+#         if train_loader:
+#             correct, total = 0, 0
+#             with torch.no_grad():
+#                 for batch in train_loader:
+#                     if len(batch) == 3:
+#                         x, y, _ = batch
+#                     else:
+#                         x, y = batch
+#                     x, y = x.to(self.opt.device), y.to(self.opt.device)
+#                     preds = self.model(x)
+#                     predicted = torch.argmax(preds, dim=1)
+#                     correct += (predicted == y).sum().item()
+#                     total += y.size(0)
+#             self.save_files['train_top1'].append(correct / total)
+#         else:
+#             self.save_files['train_top1'].append(-1)
+        
+#         if test_loader:
+#             correct, total = 0, 0
+#             with torch.no_grad():
+#                 for batch in test_loader:
+#                     if len(batch) == 3:
+#                         x, y, _ = batch
+#                     else:
+#                         x, y = batch
+#                     x, y = x.to(self.opt.device), y.to(self.opt.device)
+#                     preds = self.model(x)
+#                     predicted = torch.argmax(preds, dim=1)
+#                     correct += (predicted == y).sum().item()
+#                     total += y.size(0)
+#             self.save_files['val_top1'].append(correct / total)
+#         else:
+#             self.save_files['val_top1'].append(-1)
+
+#         print(f"[{self.opt.unlearn_method}] Finished unlearning (SSD).")
+        
+#         return
+
+
+#     def get_save_prefix(self):
+#         self.unlearn_file_prefix = self.opt.pretrain_file_prefix+'/'+str(self.opt.deletion_size)+'_'+self.opt.unlearn_method+'_'+self.opt.exp_name
+#         self.unlearn_file_prefix += '_'+str(self.opt.train_iters)+'_'+str(self.opt.k)
+#         self.unlearn_file_prefix += '_'+str(self.opt.SSDdampening)+'_'+str(self.opt.SSDselectwt)
+#         return 
+
+
+
 class SSD(ApplyK):
     def __init__(self, opt, model, prenet=None):
         super().__init__(opt, model, prenet)
 
-
     def unlearn(self, train_loader, test_loader, forget_loader, eval_loaders=None):
-        # actual_iters = self.opt.train_iters
-        # self.opt.train_iters = len(train_loader) + len(forget_loader)
-        time_start = time.process_time()
-        self.best_model = ssd_tuning(self.model, forget_loader, self.opt.SSDdampening, self.opt.SSDselectwt, train_loader, self.opt.device)
+        # NOTE: Ensure train_loader/forget_loader yield (x, y), not (x, y, idx)
+        actual_iters = getattr(self.opt, "train_iters", 0)
+        n_train = len(train_loader) if train_loader is not None else 0
+        n_forget = len(forget_loader) if forget_loader is not None else 0
+        self.opt.train_iters = n_train + n_forget
 
-        self.model.load_state_dict(self.best_model.state_dict())
-        
-        self.save_files['train_time_taken'] += time.process_time() - time_start
-        # self.opt.train_iters = actual_iters
+        t0 = time.process_time()
+        # ssd_tuning should return a model with updated weights
+        self.best_model = ssd_tuning(
+            self.model,
+            forget_loader,
+            self.opt.SSDdampening,
+            self.opt.SSDselectwt,
+            train_loader,
+            self.opt.device
+        )
 
-        if train_loader:
-            correct, total = 0, 0
-            with torch.no_grad():
-                for batch in train_loader:
-                    if len(batch) == 3:
-                        x, y, _ = batch
-                    else:
-                        x, y = batch
-                    x, y = x.to(self.opt.device), y.to(self.opt.device)
-                    preds = self.model(x)
-                    predicted = torch.argmax(preds, dim=1)
-                    correct += (predicted == y).sum().item()
-                    total += y.size(0)
-            self.save_files['train_top1'].append(correct / total)
-        else:
-            self.save_files['train_top1'].append(-1)
-        
-        if test_loader:
-            correct, total = 0, 0
-            with torch.no_grad():
-                for batch in test_loader:
-                    if len(batch) == 3:
-                        x, y, _ = batch
-                    else:
-                        x, y = batch
-                    x, y = x.to(self.opt.device), y.to(self.opt.device)
-                    preds = self.model(x)
-                    predicted = torch.argmax(preds, dim=1)
-                    correct += (predicted == y).sum().item()
-                    total += y.size(0)
-            self.save_files['val_top1'].append(correct / total)
-        else:
-            self.save_files['val_top1'].append(-1)
+        # Write tuned weights back so outer code sees the update
+        if isinstance(self.best_model, nn.Module):
+            self.model.load_state_dict(self.best_model.state_dict())
 
-        print(f"[{self.opt.unlearn_method}] Finished unlearning (SSD).")
-        
+        # timing + restore iters
+        self.save_files['train_time_taken'] += time.process_time() - t0
+        self.opt.train_iters = actual_iters
         return
 
-
     def get_save_prefix(self):
-        self.unlearn_file_prefix = self.opt.pretrain_file_prefix+'/'+str(self.opt.deletion_size)+'_'+self.opt.unlearn_method+'_'+self.opt.exp_name
-        self.unlearn_file_prefix += '_'+str(self.opt.train_iters)+'_'+str(self.opt.k)
-        self.unlearn_file_prefix += '_'+str(self.opt.SSDdampening)+'_'+str(self.opt.SSDselectwt)
-        return 
+        self.unlearn_file_prefix = (
+            self.opt.pretrain_file_prefix + '/' +
+            str(self.opt.deletion_size) + '_' + self.opt.unlearn_method + '_' + self.opt.exp_name
+        )
+        self.unlearn_file_prefix += '_' + str(self.opt.train_iters) + '_' + str(self.opt.k)
+        self.unlearn_file_prefix += '_' + str(self.opt.SSDdampening) + '_' + str(self.opt.SSDselectwt)
+        return
