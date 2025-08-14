@@ -330,32 +330,13 @@ def distill_kl_loss(y_s, y_t, T, reduction='sum'):
     p_t = torch.nn.functional.softmax(y_t/T, dim=1)
     loss = torch.nn.functional.kl_div(p_s, p_t, reduction=reduction)
     if reduction == 'none':
-        if loss.ndim > 1:
-            loss = torch.sum(loss, dim=1)
-        else:
-            loss = torch.sum(loss)
+       loss = torch.sum(loss, dim=1)
     loss = loss * (T**2) / y_s.shape[0]
     return loss
 
 
 def compute_accuracy(preds, y):
-    preds = np.array(preds)
-
-    # Flatten if scalar or 0D tensor
-    if preds.ndim == 0:
-        preds = np.expand_dims(preds, axis=0)
-
-    # If still 1D, assume binary probs like [0.2, 0.8, ...]
-    if preds.ndim == 1:
-        preds = np.stack([1 - preds, preds], axis=1)
-
-    try:
-        pred_labels = np.argmax(preds, axis=1)
-    except Exception as e:
-        print("Shape of preds:", preds.shape)
-        raise e
-
-    return np.equal(pred_labels, y).mean()
+    return np.equal(np.argmax(preds, axis=1), y).mean()
 
 
 class SubsetSequentialSampler(Sampler):
